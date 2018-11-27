@@ -99,6 +99,7 @@ static void TestLogString();
 static void TestLogSink();
 static void TestLogToString();
 static void TestLogSinkWaitTillSent();
+static void TestDLOG();
 static void TestCHECK();
 static void TestDCHECK();
 static void TestSTREQ();
@@ -216,6 +217,7 @@ int main(int argc, char **argv) {
   TestLogSink();
   TestLogToString();
   TestLogSinkWaitTillSent();
+  TestDLOG();
   TestCHECK();
   TestDCHECK();
   TestSTREQ();
@@ -532,6 +534,10 @@ enum {
   CASE_B
 };
 
+void TestDLOG() {
+  DLOG_IF(FATAL, !DLOG_IS_ON()) << " DLOG shouldn't be available";
+}
+
 void TestCHECK() {
   // Tests using CHECK*() on int values.
   CHECK(1 == 1);
@@ -559,9 +565,7 @@ void TestCHECK() {
 }
 
 void TestDCHECK() {
-#ifdef NDEBUG
-  DCHECK( 1 == 2 ) << " DCHECK's shouldn't be compiled in normal mode";
-#endif
+  DCHECK(DCHECK_IS_ON()) << " DCHECK shouldn't be available";
   DCHECK( 1 == 1 );
   DCHECK_EQ(1, 1);
   DCHECK_NE(1, 2);

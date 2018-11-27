@@ -431,7 +431,13 @@ DECLARE_bool(stop_logging_if_full_disk);
 #define LOG_TO_STRING_FATAL(message) @ac_google_namespace@::NullStreamFatal()
 #endif
 
-#if defined(NDEBUG) && !defined(DCHECK_ALWAYS_ON)
+#if defined(NDEBUG) && !defined(DLOG_ALWAYS_ON)
+#define DLOG_IS_ON() 0
+#else
+#define DLOG_IS_ON() 1
+#endif
+
+#if !DLOG_IS_ON() && !defined(DCHECK_ALWAYS_ON)
 #define DCHECK_IS_ON() 0
 #else
 #define DCHECK_IS_ON() 1
@@ -439,7 +445,7 @@ DECLARE_bool(stop_logging_if_full_disk);
 
 // For DFATAL, we want to use LogMessage (as opposed to
 // LogMessageFatal), to be consistent with the original behavior.
-#if !DCHECK_IS_ON()
+#if !DLOG_IS_ON()
 #define COMPACT_GOOGLE_LOG_DFATAL COMPACT_GOOGLE_LOG_ERROR
 #elif GOOGLE_STRIP_LOG <= 3
 #define COMPACT_GOOGLE_LOG_DFATAL @ac_google_namespace@::LogMessage( \
@@ -728,7 +734,7 @@ DEFINE_CHECK_OP_IMPL(Check_GT, > )
 #if defined(STATIC_ANALYSIS)
 // Only for static analysis tool to know that it is equivalent to assert
 #define CHECK_OP_LOG(name, op, val1, val2, log) CHECK((val1) op (val2))
-#elif DCHECK_IS_ON()
+#elif DLOG_IS_ON()
 // In debug mode, avoid constructing CheckOpStrings if possible,
 // to reduce the overhead of CHECK statments by 2x.
 // Real DCHECK-heavy tests have seen 1.5x speedups.
@@ -757,7 +763,7 @@ typedef std::string _Check_string;
              @ac_google_namespace@::GetReferenceableValue(val2),        \
              #val1 " " #op " " #val2))                                  \
     log(__FILE__, __LINE__, _result).stream()
-#endif  // STATIC_ANALYSIS, DCHECK_IS_ON()
+#endif  // STATIC_ANALYSIS, DLOG_IS_ON()
 
 #if GOOGLE_STRIP_LOG <= 3
 #define CHECK_OP(name, op, val1, val2) \
@@ -977,7 +983,7 @@ const LogSeverity GLOG_0 = GLOG_ERROR;
 
 // Plus some debug-logging macros that get compiled to nothing for production
 
-#if DCHECK_IS_ON()
+#if DLOG_IS_ON()
 
 #define DLOG(severity) LOG(severity)
 #define DVLOG(verboselevel) VLOG(verboselevel)
@@ -987,21 +993,7 @@ const LogSeverity GLOG_0 = GLOG_ERROR;
   LOG_IF_EVERY_N(severity, condition, n)
 #define DLOG_ASSERT(condition) LOG_ASSERT(condition)
 
-// debug-only checking.  executed if DCHECK_IS_ON().
-#define DCHECK(condition) CHECK(condition)
-#define DCHECK_EQ(val1, val2) CHECK_EQ(val1, val2)
-#define DCHECK_NE(val1, val2) CHECK_NE(val1, val2)
-#define DCHECK_LE(val1, val2) CHECK_LE(val1, val2)
-#define DCHECK_LT(val1, val2) CHECK_LT(val1, val2)
-#define DCHECK_GE(val1, val2) CHECK_GE(val1, val2)
-#define DCHECK_GT(val1, val2) CHECK_GT(val1, val2)
-#define DCHECK_NOTNULL(val) CHECK_NOTNULL(val)
-#define DCHECK_STREQ(str1, str2) CHECK_STREQ(str1, str2)
-#define DCHECK_STRCASEEQ(str1, str2) CHECK_STRCASEEQ(str1, str2)
-#define DCHECK_STRNE(str1, str2) CHECK_STRNE(str1, str2)
-#define DCHECK_STRCASENE(str1, str2) CHECK_STRCASENE(str1, str2)
-
-#else  // !DCHECK_IS_ON()
+#else  // !DLOG_IS_ON()
 
 #define DLOG(severity) \
   true ? (void) 0 : @ac_google_namespace@::LogMessageVoidify() & LOG(severity)
@@ -1021,6 +1013,26 @@ const LogSeverity GLOG_0 = GLOG_ERROR;
 
 #define DLOG_ASSERT(condition) \
   true ? (void) 0 : LOG_ASSERT(condition)
+
+#endif  // DLOG_IS_ON()
+
+#if DCHECK_IS_ON()
+
+// debug-only checking.  executed if DCHECK_IS_ON().
+#define DCHECK(condition) CHECK(condition)
+#define DCHECK_EQ(val1, val2) CHECK_EQ(val1, val2)
+#define DCHECK_NE(val1, val2) CHECK_NE(val1, val2)
+#define DCHECK_LE(val1, val2) CHECK_LE(val1, val2)
+#define DCHECK_LT(val1, val2) CHECK_LT(val1, val2)
+#define DCHECK_GE(val1, val2) CHECK_GE(val1, val2)
+#define DCHECK_GT(val1, val2) CHECK_GT(val1, val2)
+#define DCHECK_NOTNULL(val) CHECK_NOTNULL(val)
+#define DCHECK_STREQ(str1, str2) CHECK_STREQ(str1, str2)
+#define DCHECK_STRCASEEQ(str1, str2) CHECK_STRCASEEQ(str1, str2)
+#define DCHECK_STRNE(str1, str2) CHECK_STRNE(str1, str2)
+#define DCHECK_STRCASENE(str1, str2) CHECK_STRCASENE(str1, str2)
+
+#else  // !DCHECK_IS_ON()
 
 // MSVC warning C4127: conditional expression is constant
 #define DCHECK(condition) \
